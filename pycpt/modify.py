@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import copy
 
 def cmap_xmap(function,cmap,name=None):
@@ -24,6 +25,9 @@ def reverse_cmap(cmap,newname=None):
 
 
 def generate_cmap_norm(levels,cm):
+    """Generate a color map and norm from levels and a colormap (name)"""
+    if isinstance(cm,basestring):
+        cm = plt.get_cmap(cm)
     colors = cm(np.linspace(0, 1, len(levels)+1))
     cmap = mcolors.ListedColormap(colors)
     norm = mcolors.BoundaryNorm(levels, cmap.N)
