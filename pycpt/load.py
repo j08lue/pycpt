@@ -10,7 +10,7 @@ import fnmatch
 
 from . import modify
 
-def _cmap_name_from_path(fpath,root='cpt-city',maxdepth=5):
+def _cmap_name_from_path(fpath, root='cpt-city', maxdepth=5):
     """Generates a colormap name from a path
     
     Parameters
@@ -28,21 +28,18 @@ def _cmap_name_from_path(fpath,root='cpt-city',maxdepth=5):
     prename = ''
     end = ''
     for i in xrange(maxdepth):
-        fpath,end = os.path.split(fpath)
+        fpath, end = os.path.split(fpath)
         if end == root:
             break
         elif end != '':
-            if prename != '':
-                prename = end+'/'+prename
-            else:
+            if prename == '':
                 prename = end
-    if root:
-        return root +'/'+ prename
-    else:
-        return prename
+            else:
+                prename = end+'/'+prename
+    return prename
 
 
-def find_cpt_files(cmapdir,**kwargs):
+def find_cpt_files(cmapdir, **kwargs):
     """Find .cpt files in a given path and generate names
     
     Parameters
@@ -53,16 +50,16 @@ def find_cpt_files(cmapdir,**kwargs):
         keyword arguments passed to _cmap_name_from_path()
     """
     cptcitycmaps = {}
-    for root,dirnames,filenames in os.walk(cmapdir):
-        for filename in fnmatch.filter(filenames,'*.cpt'):
-            cmapfile = os.path.join(root,filename)
-            cmapname = _cmap_name_from_path(cmapfile,**kwargs)
+    for root, dirnames, filenames in os.walk(cmapdir):
+        for filename in fnmatch.filter(filenames, '*.cpt'):
+            cmapfile = os.path.join(root, filename)
+            cmapname = _cmap_name_from_path(cmapfile, **kwargs)
             cptcitycmaps[cmapname] = cmapfile
             
     return cptcitycmaps
 
 
-def register_cptcity_cmaps(cptcitycmaps,**urlkwargs):
+def register_cptcity_cmaps(cptcitycmaps, urlkw={}, cmapnamekw={}):
     """Register cpt-city colormaps from a list of URLs and/or files to the current plt.cm space
     
     Parameters
@@ -71,7 +68,7 @@ def register_cptcity_cmaps(cptcitycmaps,**urlkwargs):
         str will be interpreted as path to scan for .cpt files
         list over file names or urls to .cpt files
         dict can be used to provide (name : fname/url) mappings
-    urlkwargs : dict
+    urlkw : dict
         keyword arguments passed to cmap_from_cptcity_url
 
     Usage
@@ -89,32 +86,38 @@ def register_cptcity_cmaps(cptcitycmaps,**urlkwargs):
         plt.cm.register_cmap(cmap=cmap)
         plt.cm.register_cmap(cmap=modify.reverse_cmap(cmap))
 
-    def _try_reading_methods(cmapfile,cmapname=None):
+    def _try_reading_methods(cmapfile, cmapname=None):
         try:
-            return gmtColormap(cmapfile,name=cmapname)
+            return gmtColormap(cmapfile, name=cmapname)
         except IOError:
             try:
-                return cmap_from_cptcity_url(cmapfile,name=cmapname,**urlkwargs) 
+                return cmap_from_cptcity_url(cmapfile, name=cmapname, **urlkw) 
             except:
                 raise
 
-    if isinstance(cptcitycmaps,str) or isinstance(cptcitycmaps,unicode):
+    if isinstance(cptcitycmaps, basestring):
         if cptcitycmaps.endswith('.cpt'):
             cptcitycmaps = [cptcitycmaps]
         else:
-            cptcitycmaps = find_cpt_files(cptcitycmaps)
+            cptcitycmaps = find_cpt_files(cptcitycmaps, **cmapnamekw)
 
-    if isinstance(cptcitycmaps,dict):
-        for cmapname,cmapfile in cptcitycmaps.iteritems():
-            cmap = _try_reading_methods(cmapfile,cmapname)
+    cmaps = []
+
+    if isinstance(cptcitycmaps, dict):
+        for cmapname, cmapfile in cptcitycmaps.iteritems():
+            cmap = _try_reading_methods(cmapfile, cmapname)
             _register_with_reverse(cmap)
+            cmaps.append(cmap)
     else:
         for cmapfile in cptcitycmaps:
             cmap = _try_reading_methods(cmapfile)
             _register_with_reverse(cmap)
+            cmaps.append(cmap)
+
+    return cmaps
 
 
-def gmtColormap(cptfile,name=None):
+def gmtColormap(cptfile, name=None):
     """Read a GMT color map from a cpt file
 
     Parameters
@@ -208,7 +211,9 @@ def gmtColormap(cptfile,name=None):
             return _gmtColormap_openfile(cptf,name=name)
 
 
-def cmap_from_cptcity_url(url,baseurl='http://soliton.vm.bytemark.co.uk/pub/cpt-city/',download=False,name=None):
+def cmap_from_cptcity_url(url,
+        baseurl='http://soliton.vm.bytemark.co.uk/pub/cpt-city/',
+        download=False, name=None):
     """Create a colormap from a url at cptcity
 
     Parameters
@@ -239,10 +244,12 @@ def cmap_from_cptcity_url(url,baseurl='http://soliton.vm.bytemark.co.uk/pub/cpt-
         if name is None:
             name = '_'.join(os.path.basename(url).split('.')[:-1])
         
-        return gmtColormap(response,name=name)
+        return gmtColormap(response, name=name)
         
 
-def cmap_from_geo_uoregon(cname,baseurl='http://geography.uoregon.edu/datagraphics/color/',download=False):
+def cmap_from_geo_uoregon(cname,
+        baseurl='http://geography.uoregon.edu/datagraphics/color/',
+        download=False):
     """Parse an online file from geography.uoregon.edu to create a Python colormap"""
     ext = '.txt'
 
