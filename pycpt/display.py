@@ -14,21 +14,40 @@ def plot_colormap(cmap):
     fig.show()
     return fig
 
+def plot_colormaps(cmap_list):
+    """Plot a list of color gradients with their names
+    
+    Credits
+    -------
+    http://matplotlib.org/examples/color/colormaps_reference.html
+    """
+    gradient = np.linspace(0, 1, 256)
+    gradient = np.vstack((gradient, gradient))
+
+    fig, axes = plt.subplots(nrows=len(cmap_list))
+    fig.subplots_adjust(top=0.95, bottom=0.01, left=0.2, right=0.99)
+
+    for ax, cmap in zip(axes, cmap_list):
+        if isinstance(cmap, basestring):
+            cmap = plt.get_cmap(cmap)
+        ax.imshow(gradient, aspect='auto', cmap=cmap)
+        pos = list(ax.get_position().bounds)
+        x_text = pos[0] - 0.01
+        y_text = pos[1] + pos[3]/2.
+        fig.text(x_text, y_text, cmap.name, va='center', ha='right', fontsize=10)
+
+    # Turn off *all* ticks & spines, not just the ones with colormaps.
+    for ax in axes:
+        ax.set_axis_off()
+
+    plt.show()
+    return fig
+
 
 def show_matplotlib_colormaps():
-    plt.rc('text', usetex=False)
-    a = np.outer(np.arange(0,1,0.01),np.ones(10))
-    fig = plt.figure(figsize=(10,5))
-    fig.subplots_adjust(top=0.8,bottom=0.05,left=0.01,right=0.99)
     cmaps = [m for m in plt.cm.datad if not m.endswith('_r')]
     cmaps.sort()
-    l=len(cmaps)+1
-    for i,m in enumerate(cmaps):
-        plt.subplot(1,l,i+1)
-        plt.axis('off')
-        plt.imshow(a,aspect='auto',cmap=plt.get_cmap(m),origin='lower')
-        plt.title(m,rotation=90,fontsize=10)
-    plt.show(fig)
+    return plot_colormaps(cmaps)
 
 
 def demo_uoregon():
