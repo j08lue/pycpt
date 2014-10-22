@@ -24,14 +24,35 @@ def reverse_cmap(cmap,newname=None):
     return cmap_xmap(lambda x: -1.*(x-1.),cmap,name=newname)
 
 
-def generate_cmap_norm(levels,cm):
-    """Generate a color map and norm from levels and a colormap (name)"""
-    if isinstance(cm,basestring):
+def generate_cmap_norm(levels, cm, extend='neither'):
+    """Generate a color map and norm from levels and a colormap (name)
+    
+    Parameters
+    ----------
+    levels : iterable of levels
+        data levels
+    cm : cmap or name of registered cmap
+        color map
+    extend : str [ neither | both | min | max ]
+        which edge(s) of the color range to extend
+    """
+    if isinstance(cm, basestring):
         cm = plt.get_cmap(cm)
-    colors = cm(np.linspace(0, 1, len(levels)+1))
+    nplus = [-1,0,0,1][['neither','min','max','both'].index(extend)]
+    N = len(levels) + nplus
+    colors = cm(np.linspace(0, 1, N))
     cmap = mcolors.ListedColormap(colors)
-    norm = mcolors.BoundaryNorm(levels, cmap.N)
-    return cmap,norm
+    if extend in ['min', 'both']:
+        cmap.set_under(colors[0])
+    else:
+        cmap.set_under('none')
+    if extend in ['max', 'both']:
+        cmap.set_over(colors[-1])
+    else:
+        cmap.set_over('none')
+    cmap.colorbar_extend = extend
+    norm = mcolors.BoundaryNorm(levels, N)
+    return cmap, norm
 
 
 
