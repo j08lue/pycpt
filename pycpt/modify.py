@@ -24,7 +24,7 @@ def reverse_cmap(cmap,newname=None):
     return cmap_xmap(lambda x: -1.*(x-1.),cmap,name=newname)
 
 
-def generate_cmap_norm(levels, cm, extend='neither'):
+def generate_cmap_norm(levels, cm, extend='neither', name='from_list', return_dict=False):
     """Generate a color map and norm from levels and a colormap (name)
     
     Parameters
@@ -35,13 +35,17 @@ def generate_cmap_norm(levels, cm, extend='neither'):
         color map
     extend : str [ neither | both | min | max ]
         which edge(s) of the color range to extend
+    name : str, optional
+        new name for colormap
+    return_dict : bool
+        return dictionary
     """
     if isinstance(cm, basestring):
         cm = plt.get_cmap(cm)
     nplus = [-1,0,0,1][['neither','min','max','both'].index(extend)]
     N = len(levels) + nplus
     colors = cm(np.linspace(0, 1, N))
-    cmap = mcolors.ListedColormap(colors)
+    cmap = mcolors.ListedColormap(colors, name=(name or cm.name))
     if extend in ['min', 'both']:
         cmap.set_under(colors[0])
     else:
@@ -52,7 +56,10 @@ def generate_cmap_norm(levels, cm, extend='neither'):
         cmap.set_over('none')
     cmap.colorbar_extend = extend
     norm = mcolors.BoundaryNorm(levels, N)
-    return cmap, norm
+    if return_dict:
+        return dict(cmap=cmap, norm=norm)
+    else:
+        return cmap, norm
 
 
 
