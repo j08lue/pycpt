@@ -13,7 +13,7 @@ def cmap_xmap(function, cmap, name=None):
     should map the [0, 1] segment to itself, or you are in for surprises."""
     cmap = copy.deepcopy(cmap)
     cdict = cmap._segmentdata
-    for key in cdict.keys():
+    for key in cdict:
         cdict[key] = sorted([(function(x[0]), x[1], x[2]) for x in cdict[key]])
     if name is not None: cmap.name = name
     return mcolors.LinearSegmentedColormap(cmap.name, cdict, cmap.N)
@@ -23,7 +23,7 @@ def reverse_cmap(cmap, newname=None):
     """Reverse a given matplotlib colormap instance"""
     if newname is None:
         newname = cmap.name + '_r'
-    return cmap_xmap(lambda x: -1.*(x-1.),cmap, name=newname)
+    return cmap_xmap(lambda x: -1.*(x-1.), cmap, name=newname)
 
 
 def generate_cmap_norm(levels, cm, extend='neither', name='from_list', return_dict=False):
@@ -42,7 +42,7 @@ def generate_cmap_norm(levels, cm, extend='neither', name='from_list', return_di
     return_dict : bool
         return dictionary
     """
-    if isinstance(cm, basestring):
+    if isinstance(cm, str):
         cm = plt.get_cmap(cm)
     nplus = [-1,0,0,1][['neither','min','max','both'].index(extend)]
     N = len(levels) + nplus

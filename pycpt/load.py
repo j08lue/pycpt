@@ -3,15 +3,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-import numpy as np
-import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
+from builtins import range
 try:
     from urllib.parse import urljoin
     from urllib.request import urlretrieve, urlopen, Request
 except ImportError:
     from urllib2 import urlretrieve, urlopen, Request
     from urlparse import urljoin
+import numpy as np
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import colorsys
 import os
 import fnmatch
