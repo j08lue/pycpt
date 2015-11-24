@@ -3,12 +3,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from builtins import range
 try:
     from urllib.parse import urljoin
     from urllib.request import urlretrieve, urlopen, Request
 except ImportError:
-    from urllib2 import urlretrieve, urlopen, Request
+    from urllib2 import urlopen, Request
+    from urllib import urlretrieve 
     from urlparse import urljoin
 import numpy as np
 import matplotlib.colors as mcolors
@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import colorsys
 import os
 import fnmatch
+import codecs
 
 from . import modify
 
@@ -126,98 +127,102 @@ def register_cptcity_cmaps(cptcitycmaps, urlkw={}, cmapnamekw={}):
     return cmaps
 
 
-def gmtColormap(cptfile, name=None):
-    """Read a GMT color map from a cpt file
+def gmtColormap_openfile(cptf, name=None):
+    """Read a GMT color map from an OPEN cpt file
 
     Parameters
     ----------
-    cptfile : str
+    cptf : open file or url handle
         path to .cpt file
     name : str, optional
         name for color map
         if not provided, the file name will be used
     """
+    # generate cmap name
+    if name is None:
+        name = '_'.join(os.path.basename(cptf.name).split('.')[:-1])
 
-    def _gmtColormap_openfile(cptf,name=None):
-        """Read a GMT color map from an OPEN cpt file
+    # process file
+    x = []
+    r = []
+    g = []
+    b = []
+    lastls = None
+    for l in cptf.readlines():
+        ls = l.split()
 
-        Parameters
-        ----------
-        cptf : open file or url handle
-            path to .cpt file
-        name : str, optional
-            name for color map
-            if not provided, the file name will be used
-        """
-        # generate cmap name
-        if name is None:
-            name = '_'.join(os.path.basename(cptf.name).split('.')[:-1])
+        # skip empty lines
+        if not ls:
+            continue
 
-        # process file
-        x = []
-        r = []
-        g = []
-        b = []
-        for l in cptf.readlines():
-            ls = l.split()
-
-            # parse header info
-            if l[0] == "#":
-                if ls[-1] == "HSV":
-                    colorModel = "HSV"
-                    continue
-                else:
-                    colorModel = "RGB"
-                    continue
-
-            # skip BFN info
-            if ls[0] == "B" or ls[0] == "F" or ls[0] == "N":
-                pass
+        # parse header info
+        if ls[0] in ["#", b"#"]:
+            if ls[-1] in ["HSV", b"HSV"]:
+                colorModel = "HSV"
             else:
-                # parse color vectors
-                x.append(float(ls[0]))
-                r.append(float(ls[1]))
-                g.append(float(ls[2]))
-                b.append(float(ls[3]))
-                xtemp = float(ls[4])
-                rtemp = float(ls[5])
-                gtemp = float(ls[6])
-                btemp = float(ls[7])
-        x.append(xtemp)
-        r.append(rtemp)
-        g.append(gtemp)
-        b.append(btemp)
+                colorModel = "RGB"
+            continue
 
-        x,r,g,b = map(np.array,[x,r,g,b])
+        # skip BFN info
+        if ls[0] in ["B", b"B", "F", b"F", "N", b"N"]:
+            continue
 
-        if colorModel == "HSV":
-            for i in range(r.shape[0]):
-                # convert HSV to RGB
-                rr,gg,bb = colorsys.hsv_to_rgb(r[i]/360.,g[i],b[i])
-                r[i] = rr ; g[i] = gg ; b[i] = bb
-        elif colorModel == "RGB":
-            r = r/255.
-            g = g/255.
-            b = b/255.
+        # parse color vectors
+        x.append(float(ls[0]))
+        r.append(float(ls[1]))
+        g.append(float(ls[2]))
+        b.append(float(ls[3]))
 
-        red = []
-        blue = []
-        green = []
-        xNorm = (x - x[0])/(x[-1] - x[0])
-        for i in range(len(x)):
-            red.append([xNorm[i],r[i],r[i]])
-            green.append([xNorm[i],g[i],g[i]])
-            blue.append([xNorm[i],b[i],b[i]])
+        # save last row
+        lastls = ls
 
-        # return colormap
-        cdict = dict(red=red,green=green,blue=blue)
-        return mcolors.LinearSegmentedColormap(name=name,segmentdata=cdict)
+    x.append(float(lastls[4]))
+    r.append(float(lastls[5]))
+    g.append(float(lastls[6]))
+    b.append(float(lastls[7]))
+    
+    x = np.array(x)
+    r = np.array(r)
+    g = np.array(g)
+    b = np.array(b)
 
-    try:
-        return _gmtColormap_openfile(cptfile,name=name)
-    except:
-        with open(cptfile) as cptf:
-            return _gmtColormap_openfile(cptf,name=name)
+    if colorModel == "HSV":
+        for i in range(r.shape[0]):
+            # convert HSV to RGB
+            rr,gg,bb = colorsys.hsv_to_rgb(r[i]/360., g[i], b[i])
+            r[i] = rr ; g[i] = gg ; b[i] = bb
+    elif colorModel == "RGB":
+        r /= 255.
+        g /= 255.
+        b /= 255.
+
+    red = []
+    blue = []
+    green = []
+    xNorm = (x - x[0])/(x[-1] - x[0])
+    for i in range(len(x)):
+        red.append([xNorm[i],r[i],r[i]])
+        green.append([xNorm[i],g[i],g[i]])
+        blue.append([xNorm[i],b[i],b[i]])
+
+    # return colormap
+    cdict = dict(red=red,green=green,blue=blue)
+    return mcolors.LinearSegmentedColormap(name=name,segmentdata=cdict)
+
+
+def gmtColormap(cptfile, name=None):
+    """Read a GMT color map from a cpt file
+
+    Parameters
+    ----------
+    cptfile : str or open file-like object
+        path to .cpt file
+    name : str, optional
+        name for color map
+        if not provided, the file name will be used
+    """
+    with open(cptfile, 'r') as cptf:
+        return gmtColormap_openfile(cptf, name=name)
 
 
 def cmap_from_cptcity_url(url,
@@ -236,45 +241,42 @@ def cmap_from_cptcity_url(url,
     name : str, optional
         name for color map
     """
+    if name is None:
+        name = '_'.join(os.path.basename(url).split('.')[:-1])
 
-    url = urljoin(baseurl,url)
+    url = urljoin(baseurl, url)
         
     if download:
         fname = os.path.basename(url)
-        urlretrieve(url,fname)
-
-        return gmtColormap(fname,name=name)
+        urlretrieve(url, fname)
+        return gmtColormap(fname, name=name)
     
     else:
         # process file directly from online source
-        #req = Request(url)
         response = urlopen(url)
-        
-        if name is None:
-            name = '_'.join(os.path.basename(url).split('.')[:-1])
-        
-        return gmtColormap(response, name=name)
+        return gmtColormap_openfile(response, name=name)
         
 
 def cmap_from_geo_uoregon(cname,
-        baseurl='http://geography.uoregon.edu/datagraphics/color/',
+        baseurl='http://geog.uoregon.edu/datagraphics/color/',
         download=False):
     """Parse an online file from geography.uoregon.edu to create a Python colormap"""
     ext = '.txt'
 
-    url = baseurl + cname + ext
+    url = urljoin(baseurl, cname+ext)
+    print(url)
     
     # process file directly from online source
     req = Request(url)
     response = urlopen(req)
-    rgb = np.loadtxt(response,skiprows=2)
+    rgb = np.loadtxt(response, skiprows=2)
     
     # save original file
     if download:
         fname = os.path.basename(url) + ext
-        urlretrieve (url,fname)
+        urlretrieve (url, fname)
         
-    return mcolors.ListedColormap(rgb,cname)
+    return mcolors.ListedColormap(rgb, cname)
 
 
 
