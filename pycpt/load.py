@@ -1,9 +1,17 @@
-"""Read, generate, and modify color maps"""
+"""Load colormaps from a variety of sources, mainly .cpt though"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 import numpy as np
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
-import urllib,urllib2
-import urlparse
+try:
+    from urllib.parse import urljoin
+    from urllib.request import urlretrieve, urlopen, Request
+except ImportError:
+    from urllib2 import urlretrieve, urlopen, Request
+    from urlparse import urljoin
 import colorsys
 import os
 import fnmatch
@@ -27,7 +35,7 @@ def _cmap_name_from_path(fpath, root='cpt-city', maxdepth=5):
     fpath = os.path.splitext(fpath)[0]
     prename = ''
     end = ''
-    for i in xrange(maxdepth):
+    for i in range(maxdepth):
         fpath, end = os.path.split(fpath)
         if end == root:
             break
@@ -95,7 +103,7 @@ def register_cptcity_cmaps(cptcitycmaps, urlkw={}, cmapnamekw={}):
             except:
                 raise
 
-    if isinstance(cptcitycmaps, basestring):
+    if isinstance(cptcitycmaps, str):
         if cptcitycmaps.endswith('.cpt'):
             cptcitycmaps = [cptcitycmaps]
         else:
@@ -104,7 +112,7 @@ def register_cptcity_cmaps(cptcitycmaps, urlkw={}, cmapnamekw={}):
     cmaps = []
 
     if isinstance(cptcitycmaps, dict):
-        for cmapname, cmapfile in cptcitycmaps.iteritems():
+        for cmapname, cmapfile in cptcitycmaps.items():
             cmap = _try_reading_methods(cmapfile, cmapname)
             _register_with_reverse(cmap)
             cmaps.append(cmap)
@@ -182,7 +190,7 @@ def gmtColormap(cptfile, name=None):
         x,r,g,b = map(np.array,[x,r,g,b])
 
         if colorModel == "HSV":
-            for i in xrange(r.shape[0]):
+            for i in range(r.shape[0]):
                 # convert HSV to RGB
                 rr,gg,bb = colorsys.hsv_to_rgb(r[i]/360.,g[i],b[i])
                 r[i] = rr ; g[i] = gg ; b[i] = bb
@@ -195,7 +203,7 @@ def gmtColormap(cptfile, name=None):
         blue = []
         green = []
         xNorm = (x - x[0])/(x[-1] - x[0])
-        for i in xrange(len(x)):
+        for i in range(len(x)):
             red.append([xNorm[i],r[i],r[i]])
             green.append([xNorm[i],g[i],g[i]])
             blue.append([xNorm[i],b[i],b[i]])
@@ -228,18 +236,18 @@ def cmap_from_cptcity_url(url,
         name for color map
     """
 
-    url = urlparse.urljoin(baseurl,url)
+    url = urljoin(baseurl,url)
         
     if download:
         fname = os.path.basename(url)
-        urllib.urlretrieve(url,fname)
+        urlretrieve(url,fname)
 
         return gmtColormap(fname,name=name)
     
     else:
         # process file directly from online source
-        #req = urllib2.Request(url)
-        response = urllib2.urlopen(url)
+        #req = Request(url)
+        response = urlopen(url)
         
         if name is None:
             name = '_'.join(os.path.basename(url).split('.')[:-1])
@@ -256,14 +264,14 @@ def cmap_from_geo_uoregon(cname,
     url = baseurl + cname + ext
     
     # process file directly from online source
-    req = urllib2.Request(url)
-    response = urllib2.urlopen(req)
+    req = Request(url)
+    response = urlopen(req)
     rgb = np.loadtxt(response,skiprows=2)
     
     # save original file
     if download:
         fname = os.path.basename(url) + ext
-        urllib.urlretrieve (url,fname)
+        urlretrieve (url,fname)
         
     return mcolors.ListedColormap(rgb,cname)
 
