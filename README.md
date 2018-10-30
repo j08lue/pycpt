@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.com/j08lue/pycpt.svg?branch=master)](https://travis-ci.com/j08lue/pycpt)
+[![codecov](https://codecov.io/gh/j08lue/pycpt/branch/master/graph/badge.svg)](https://codecov.io/gh/j08lue/pycpt)
 
 pycpt
 =====
