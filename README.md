@@ -1,18 +1,23 @@
+[![Build Status](https://travis-ci.com/j08lue/pycpt.svg?branch=master)](https://travis-ci.com/j08lue/pycpt)
+
 pycpt
 =====
 
 Python tools to load and handle cpt (GMT format) color maps for use with matplotlib, e.g. from cpt-city
 
-py2to3
-------
+Installation
+------------
 
-Should work with both Python 2 and 3
-
+```bash
+pip install https://github.com/j08lue/pycpt/archive/master.zip
+```
 
 Tests
 -----
 
 You can run the tests with
 
-    python -m unittest discover tests
-
+```bash
+pip install -e .[test]
+pytest -v
+```
